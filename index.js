@@ -25,32 +25,33 @@ con.connect(function(err) {
   console.log("sql Connected!");
 
   //   returning email
-  const find_email = async (email) => {
-    let user = await {};
-    await con.query(
-      `select * from user where email = ?`,
-      [email],
-      async (err, row, field) => {
-        if (err) throw err;
-        user = await {...row[0]};
-      }
-    );
-    return await user;
+  async function find_email(email) {
+    return new Promise((res, rej) => {
+      con.query(
+        `select * from user where email = ?`,
+        [email],
+        async (err, row, field) => {
+          if (err) rej(err);
+          // console.log("+++++++++++");
+          // console.log(row);
+          res(row);
+        }
+      );
+    });
   }
 
   //   returning Id
   function find_Id(id) {
-    const User = con.query(
-      `select * from user where Id = ?`,
-      [id],
-      (err, row, field) => {
-        if (err) throw err;
-        
-        return row[0];
-      }
-    );
-
-    return User;
+    return new Promise((res, rej) => {
+      con.query(
+        `select * from user where Id = ?`,
+        [id],
+        async (err, row, field) => {
+          if (err) rej(err);
+          res(row);
+        }
+      );
+    });
   }
 
   con.query(`select * from user`, (err, user, field) => {
@@ -75,12 +76,21 @@ con.connect(function(err) {
       })
     );
 
+    app.use(
+      session({
+        secret: 'cookie_secret',
+        resave: false,
+        saveUninitialized: true
+      })
+    );
     app.use(passport.initialize());
     app.use(passport.session());
     app.use(methodOverride("_method"));
 
-    app.get("/", checkAuthenticated, (req, res) => {
-      res.render("index.ejs", { name: req.user.name });
+    app.get("/", checkAuthenticated, async (req, res) => {
+      // console.log("this is the result => ");
+      // console.log(await req.user);
+      res.render("index.ejs", { obj: await req.user });
     });
 
     // Login######################################
