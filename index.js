@@ -24,18 +24,45 @@ con.connect(function(err) {
   if (err) throw err;
   console.log("sql Connected!");
 
+  //   returning email
+  const find_email = async (email) => {
+    let user = await {};
+    await con.query(
+      `select * from user where email = ?`,
+      [email],
+      async (err, row, field) => {
+        if (err) throw err;
+        user = await {...row[0]};
+      }
+    );
+    return await user;
+  }
+
+  //   returning Id
+  function find_Id(id) {
+    const User = con.query(
+      `select * from user where Id = ?`,
+      [id],
+      (err, row, field) => {
+        if (err) throw err;
+        
+        return row[0];
+      }
+    );
+
+    return User;
+  }
+
   con.query(`select * from user`, (err, user, field) => {
     if (err) throw err;
-    console.log(user);
+    //console.log(user);
 
     const initializedPassport = require("./passport-config");
     initializedPassport(
       passport,
-      email => user.find(user => user.email === email),
-      id => user.find(user => user.id === id)
+      email => find_email(email),
+      id => find_Id(id)
     );
-
-    // const user = [];
 
     app.set("view-engine", "ejs");
     app.use(express.urlencoded({ extended: false }));
@@ -79,18 +106,19 @@ con.connect(function(err) {
     app.post("/register", checkNotAuthenticated, async (req, res) => {
       try {
         const hashedPassword = await bcrypt.hash(req.body.password, 10);
-        user.push({
-          id: Date.now().toString(),
+        const values = {
           name: req.body.name,
           email: req.body.email,
           password: hashedPassword
+        };
+        con.query(`insert into user set ?`, values, (err, row, fields) => {
+          if (err) throw err;
+          console.log(row);
         });
         res.redirect("/login");
       } catch {
         res.redirect("/register");
       }
-
-      console.log(user);
     });
 
     app.delete("/logout", (req, res) => {
